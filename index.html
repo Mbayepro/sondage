@@ -4,964 +4,439 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Sondage Cotisation — Nelal Express</title>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'Segoe UI', sans-serif;
-    background: #0F172A;
-    color: #fff;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-  }
-
-  .card {
-    background: #1E293B;
-    border: 1px solid rgba(249,115,22,0.2);
-    border-radius: 24px;
-    padding: 2.5rem 2rem;
-    max-width: 480px;
-    width: 100%;
-    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
-  }
-
-  /* Header */
-  .logo {
-    display: flex; align-items: center; gap: .6rem;
-    margin-bottom: 1.8rem;
-  }
-  .logo-icon {
-    width: 38px; height: 38px;
-    background: #F97316;
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 900; font-size: 1.1rem;
-  }
-  .logo-text { font-size: 1.1rem; font-weight: 800; letter-spacing: 1px; }
-  .logo-text span { color: #F97316; }
-
-  .tag {
-    display: inline-block;
-    background: rgba(249,115,22,0.1);
-    border: 1px solid rgba(249,115,22,0.3);
-    color: #F97316;
-    font-size: .7rem;
-    font-weight: 700;
-    letter-spacing: 2px;
-    padding: .3rem .8rem;
-    border-radius: 100px;
-    margin-bottom: 1rem;
-  }
-
-  h1 {
-    font-size: 1.6rem;
-    font-weight: 900;
-    margin-bottom: .6rem;
-    line-height: 1.2;
-  }
-
-  .subtitle {
-    font-size: .9rem;
-    color: #94A3B8;
-    line-height: 1.7;
-    margin-bottom: 2rem;
-  }
-  .subtitle strong { color: #fff; }
-
-  /* Message info */
-  .info-msg {
-    background: rgba(34,197,94,0.1);
-    border: 1px solid rgba(34,197,94,0.2);
-    color: #86EFAC;
-    padding: .7rem 1rem;
-    border-radius: 10px;
-    font-size: .82rem;
-    margin-bottom: 1rem;
-    display: none;
-  }
-  .info-msg.show { display: block; }
-
-  /* Séparateur */
-  .sep {
-    height: 1px;
-    background: rgba(255,255,255,0.06);
-    margin: 1.5rem 0;
-  }
-
-  /* Question montant */
-  .question-label {
-    font-size: .75rem;
-    font-weight: 700;
-    color: #64748B;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 1rem;
-  }
-
-  .amounts {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: .7rem;
-    margin-bottom: 1rem;
-  }
-
-  .amount-btn {
-    background: #0F172A;
-    border: 2px solid rgba(255,255,255,0.08);
-    color: #94A3B8;
-    padding: .9rem .5rem;
-    border-radius: 14px;
-    font-size: .95rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all .2s;
-    text-align: center;
-    outline: none;
-  }
-  .amount-btn:hover {
-    border-color: #F97316;
-    color: #F97316;
-    background: rgba(249,115,22,0.06);
-  }
-  .amount-btn:focus-visible {
-    outline: 2px solid #F97316;
-    outline-offset: 2px;
-  }
-  .amount-btn.selected {
-    border-color: #F97316;
-    background: rgba(249,115,22,0.12);
-    color: #F97316;
-    box-shadow: 0 0 16px rgba(249,115,22,0.15);
-  }
-  .amount-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    border-color: rgba(255,255,255,0.08);
-    color: #64748B;
-  }
-  .amount-btn:disabled:hover {
-    background: #0F172A;
-    border-color: rgba(255,255,255,0.08);
-    color: #64748B;
-  }
-  .amount-btn .fcfa {
-    display: block;
-    font-size: .6rem;
-    font-weight: 400;
-    color: #475569;
-    margin-top: .2rem;
-  }
-  .amount-btn.selected .fcfa { color: #F97316; opacity: .7; }
-
-  /* Bouton "Je ne peux pas" */
-  .cannot-btn {
-    width: 100%;
-    background: #0F172A;
-    border: 2px dashed rgba(239,68,68,0.3);
-    color: #EF4444;
-    padding: 1rem;
-    border-radius: 14px;
-    font-size: .95rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all .2s;
-    text-align: center;
-    margin-bottom: 1.5rem;
-    outline: none;
-  }
-  .cannot-btn:hover {
-    border-color: #EF4444;
-    background: rgba(239,68,68,0.08);
-  }
-  .cannot-btn:focus-visible {
-    outline: 2px solid #EF4444;
-    outline-offset: 2px;
-  }
-  .cannot-btn.selected {
-    border-style: solid;
-    border-color: #EF4444;
-    background: rgba(239,68,68,0.12);
-    box-shadow: 0 0 16px rgba(239,68,68,0.15);
-  }
-
-  /* Nom optionnel */
-  .name-group {
-    margin-bottom: 1.5rem;
-  }
-  .name-group label {
-    display: block;
-    font-size: .72rem;
-    color: #64748B;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: .6rem;
-  }
-  .name-group input {
-    width: 100%;
-    background: #0F172A;
-    border: 1px solid rgba(255,255,255,0.08);
-    color: #fff;
-    padding: .7rem 1rem;
-    border-radius: 12px;
-    font-size: .9rem;
-    outline: none;
-    transition: border-color .2s;
-  }
-  .name-group input:focus {
-    border-color: #F97316;
-    outline: none;
-  }
-  .name-group input::placeholder { color: #3A4060; }
-
-  /* Submit */
-  .btn-submit {
-    width: 100%;
-    background: #F97316;
-    color: #fff;
-    border: none;
-    padding: 1rem;
-    border-radius: 14px;
-    font-size: 1rem;
-    font-weight: 800;
-    cursor: pointer;
-    transition: all .2s;
-    margin-bottom: .8rem;
-    outline: none;
-  }
-  .btn-submit:hover:not(:disabled) {
-    background: #EA580C;
-    box-shadow: 0 0 24px rgba(249,115,22,0.3);
-    transform: translateY(-1px);
-  }
-  .btn-submit:focus-visible {
-    outline: 2px solid #F97316;
-    outline-offset: 2px;
-  }
-  .btn-submit:disabled {
-    opacity: .4; cursor: not-allowed; transform: none;
-  }
-
-  /* Loading state */
-  .btn-submit.loading {
-    position: relative;
-    color: transparent;
-  }
-  .btn-submit.loading::after {
-    content: '';
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    top: 50%;
-    left: 50%;
-    margin-left: -10px;
-    margin-top: -10px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  /* Résultats */
-  .results {
-    display: none;
-    margin-top: 1.5rem;
-  }
-  .results.show { display: block; }
-
-  .result-title {
-    font-size: .72rem;
-    color: #64748B;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 1rem;
-  }
-
-  .result-bar-wrap {
-    margin-bottom: 1rem;
-  }
-  .result-bar-label {
-    display: flex; justify-content: space-between;
-    font-size: .82rem; font-weight: 600;
-    margin-bottom: .4rem;
-  }
-  .result-bar {
-    height: 8px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .result-bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width .6s ease;
-  }
-  .fill-oui { background: #22C55E; }
-  .fill-non { background: #EF4444; }
-
-  .result-votes {
-    display: flex; flex-wrap: wrap; gap: .5rem;
-    margin-top: 1rem;
-  }
-  .vote-chip {
-    font-size: .72rem;
-    padding: .25rem .7rem;
-    border-radius: 100px;
-    background: rgba(255,255,255,0.06);
-    color: #94A3B8;
-    transition: all .3s ease;
-  }
-  .vote-chip.oui { background: rgba(34,197,94,0.1); color: #22C55E; }
-  .vote-chip.non { background: rgba(239,68,68,0.1); color: #EF4444; }
-  .vote-chip.new {
-    animation: chipPulse 0.6s ease;
-  }
-  @keyframes chipPulse {
-    0% { transform: scale(0.8); opacity: 0; }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); opacity: 1; }
-  }
-
-  .total-box {
-    background: rgba(249,115,22,0.08);
-    border: 1px solid rgba(249,115,22,0.2);
-    border-radius: 14px;
-    padding: 1rem;
-    text-align: center;
-    margin-top: 1.2rem;
-  }
-  .total-box .amount {
-    font-size: 2rem;
-    font-weight: 900;
-    color: #F97316;
-    transition: all .3s ease;
-  }
-  .total-box .label {
-    font-size: .75rem;
-    color: #64748B;
-    margin-top: .2rem;
-  }
-
-  /* Partage WhatsApp */
-  .btn-wa {
-    display: flex; align-items: center; justify-content: center; gap: .5rem;
-    width: 100%;
-    background: rgba(34,197,94,0.1);
-    border: 1px solid rgba(34,197,94,0.25);
-    color: #22C55E;
-    padding: .8rem;
-    border-radius: 14px;
-    font-size: .9rem;
-    font-weight: 700;
-    cursor: pointer;
-    text-decoration: none;
-    margin-top: 1rem;
-    transition: background .2s;
-    outline: none;
-  }
-  .btn-wa:hover { background: rgba(34,197,94,0.18); }
-  .btn-wa:focus-visible {
-    outline: 2px solid #22C55E;
-    outline-offset: 2px;
-  }
-
-  /* Thank you */
-  .thankyou {
-    display: none;
-    text-align: center;
-    padding: 1.5rem 0;
-  }
-  .thankyou.show { display: block; }
-  .thankyou .emoji { font-size: 3rem; margin-bottom: 1rem; }
-  .thankyou h2 { font-size: 1.3rem; margin-bottom: .5rem; }
-  .thankyou p { color: #94A3B8; font-size: .9rem; line-height: 1.6; }
-
-  /* Already voted message */
-  .already-voted {
-    display: none;
-    background: rgba(249,115,22,0.1);
-    border: 1px solid rgba(249,115,22,0.2);
-    border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    text-align: center;
-  }
-  .already-voted.show { display: block; }
-  .already-voted .icon { font-size: 1.5rem; margin-bottom: .5rem; }
-  .already-voted p { font-size: .85rem; color: #94A3B8; }
-  .already-voted strong { color: #F97316; }
-
-  .error-msg {
-    background: rgba(239,68,68,0.1);
-    border: 1px solid rgba(239,68,68,0.2);
-    color: #FCA5A5;
-    padding: .7rem 1rem;
-    border-radius: 10px;
-    font-size: .82rem;
-    margin-bottom: 1rem;
-    display: none;
-  }
-  .error-msg.show { display: block; }
-
-  /* Connection status */
-  .conn-status {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    padding: .4rem .8rem;
-    border-radius: 100px;
-    font-size: .7rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    transition: all .3s;
-    z-index: 100;
-  }
-  .conn-status.online {
-    background: rgba(34,197,94,0.15);
-    color: #22C55E;
-    border: 1px solid rgba(34,197,94,0.3);
-  }
-  .conn-status.offline {
-    background: rgba(239,68,68,0.15);
-    color: #EF4444;
-    border: 1px solid rgba(239,68,68,0.3);
-  }
-  .conn-status.connecting {
-    background: rgba(249,115,22,0.15);
-    color: #F97316;
-    border: 1px solid rgba(249,115,22,0.3);
-  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0F172A;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+  .card{background:#1E293B;border:1px solid rgba(249,115,22,0.2);border-radius:24px;padding:2.5rem 2rem;max-width:480px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,0.5)}
+  .logo{display:flex;align-items:center;gap:.6rem;margin-bottom:1.8rem}
+  .logo-icon{width:38px;height:38px;background:#F97316;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem}
+  .logo-text{font-size:1.1rem;font-weight:800;letter-spacing:1px}
+  .logo-text span{color:#F97316}
+  .tag{display:inline-block;background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);color:#F97316;font-size:.7rem;font-weight:700;letter-spacing:2px;padding:.3rem .8rem;border-radius:100px;margin-bottom:1rem}
+  h1{font-size:1.6rem;font-weight:900;margin-bottom:.6rem;line-height:1.2}
+  .subtitle{font-size:.9rem;color:#94A3B8;line-height:1.7;margin-bottom:1.5rem}
+  .subtitle strong{color:#fff}
+  .sep{height:1px;background:rgba(255,255,255,0.06);margin:1.2rem 0}
+  .conn-badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.68rem;color:#64748B;margin-bottom:1rem}
+  .conn-dot{width:6px;height:6px;border-radius:50%;background:#F97316;animation:blink 1.5s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .question-label{font-size:.75rem;font-weight:700;color:#64748B;letter-spacing:2px;text-transform:uppercase;margin-bottom:1rem}
+  .amounts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem;margin-bottom:1rem}
+  .amount-btn{background:#0F172A;border:2px solid rgba(255,255,255,0.08);color:#94A3B8;padding:.9rem .5rem;border-radius:14px;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
+  .amount-btn:hover:not(:disabled){border-color:#F97316;color:#F97316;background:rgba(249,115,22,0.06)}
+  .amount-btn.selected{border-color:#F97316;background:rgba(249,115,22,0.12);color:#F97316;box-shadow:0 0 16px rgba(249,115,22,0.15)}
+  .amount-btn:disabled{opacity:.35;cursor:not-allowed}
+  .fcfa{display:block;font-size:.6rem;font-weight:400;color:#475569;margin-top:.2rem}
+  .amount-btn.selected .fcfa{color:#F97316;opacity:.7}
+  .cannot-btn{width:100%;background:#0F172A;border:2px dashed rgba(239,68,68,0.3);color:#EF4444;padding:1rem;border-radius:14px;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;margin-bottom:1.5rem}
+  .cannot-btn:hover{border-color:#EF4444;background:rgba(239,68,68,0.08)}
+  .cannot-btn.selected{border-style:solid;border-color:#EF4444;background:rgba(239,68,68,0.12)}
+  .name-group{margin-bottom:1.5rem}
+  .name-group label{display:block;font-size:.72rem;color:#64748B;letter-spacing:2px;text-transform:uppercase;margin-bottom:.6rem}
+  .name-group input{width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.08);color:#fff;padding:.7rem 1rem;border-radius:12px;font-size:.9rem;outline:none;transition:border-color .2s}
+  .name-group input:focus{border-color:#F97316}
+  .name-group input::placeholder{color:#3A4060}
+  .btn-submit{width:100%;background:#F97316;color:#fff;border:none;padding:1rem;border-radius:14px;font-size:1rem;font-weight:800;cursor:pointer;transition:all .2s;margin-bottom:.8rem;position:relative}
+  .btn-submit:hover:not(:disabled){background:#EA580C;box-shadow:0 0 24px rgba(249,115,22,0.3);transform:translateY(-1px)}
+  .btn-submit:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .btn-submit.loading{color:transparent}
+  .btn-submit.loading::after{content:'';position:absolute;width:20px;height:20px;top:50%;left:50%;margin:-10px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .results{display:none;margin-top:1.5rem}
+  .results.show{display:block}
+  .result-title{font-size:.72rem;color:#64748B;letter-spacing:2px;text-transform:uppercase;margin-bottom:1rem}
+  .result-bar-wrap{margin-bottom:1rem}
+  .result-bar-label{display:flex;justify-content:space-between;font-size:.82rem;font-weight:600;margin-bottom:.4rem}
+  .result-bar{height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden}
+  .result-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+  .fill-oui{background:#22C55E}
+  .fill-non{background:#EF4444}
+  .result-votes{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}
+  .vote-chip{font-size:.72rem;padding:.25rem .7rem;border-radius:100px;background:rgba(255,255,255,0.06);color:#94A3B8}
+  .vote-chip.oui{background:rgba(34,197,94,0.1);color:#22C55E}
+  .vote-chip.non{background:rgba(239,68,68,0.1);color:#EF4444}
+  .total-box{background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:14px;padding:1rem;text-align:center;margin-top:1.2rem}
+  .total-num{font-size:2rem;font-weight:900;color:#F97316}
+  .total-label{font-size:.75rem;color:#64748B;margin-top:.2rem}
+  .btn-wa{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#22C55E;padding:.8rem;border-radius:14px;font-size:.9rem;font-weight:700;text-decoration:none;margin-top:1rem;transition:background .2s}
+  .btn-wa:hover{background:rgba(34,197,94,0.18)}
+  .thankyou{display:none;text-align:center;padding:1.5rem 0}
+  .thankyou.show{display:block}
+  .ty-emoji{font-size:3rem;margin-bottom:1rem}
+  .ty-title{font-size:1.3rem;margin-bottom:.5rem}
+  .ty-text{color:#94A3B8;font-size:.9rem;line-height:1.6}
+  .error-msg{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#FCA5A5;padding:.7rem 1rem;border-radius:10px;font-size:.82rem;margin-bottom:1rem;display:none}
+  .error-msg.show{display:block}
+  .already-voted{background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:12px;padding:1rem;text-align:center;margin-bottom:1.5rem;display:none}
+  .already-voted.show{display:block}
+  .already-voted p{font-size:.85rem;color:#94A3B8;margin-top:.3rem}
 </style>
 </head>
 <body>
-
-<div class="conn-status connecting" id="conn-status">Connexion...</div>
-
 <div class="card">
-
-  <!-- Logo -->
   <div class="logo">
     <div class="logo-icon">N</div>
     <div class="logo-text">NELAL <span>EXPRESS</span></div>
   </div>
 
-  <!-- Déjà voté -->
   <div class="already-voted" id="already-voted">
-    <div class="icon">🗳️</div>
-    <p><strong>Tu as déjà voté !</strong><br>Tu peux suivre les résultats en temps réel ci-dessous.</p>
+    <div style="font-size:1.5rem">🗳️</div>
+    <p><strong style="color:#F97316">Tu as déjà voté !</strong><br>Résultats en temps réel ci-dessous.</p>
   </div>
 
-  <!-- Formulaire -->
+  <!-- FORMULAIRE -->
   <div id="form-section">
     <div class="tag">SONDAGE INTERNE · ÉQUIPE</div>
     <h1>On cotise ensemble ? 💰</h1>
     <p class="subtitle">
       Pour que <strong>Nelal Express</strong> décolle, on a besoin d'un petit budget commun —
       marketing, impression, frais de lancement. Chacun contribue selon ses moyens.
-      <br/><br/>
-      Votre réponse est <strong>100% anonyme</strong> si vous le souhaitez.
+      Réponse <strong>100% anonyme</strong> si vous le souhaitez.
     </p>
 
-    <div class="info-msg" id="info-msg">
-      ✓ Connecté en temps réel — les résultats s'actualisent automatiquement
+    <div class="conn-badge">
+      <span class="conn-dot" id="conn-dot"></span>
+      <span id="conn-txt">Connexion...</span>
     </div>
 
     <div class="sep"></div>
 
-    <!-- Montant -->
-    <div class="question-label" id="amount-label">💵 Je cotise combien par mois ?</div>
-    <div class="amounts" id="amounts-grid">
-      <button class="amount-btn" data-amount="1000" tabindex="0">
-        1 000
-        <span class="fcfa">FCFA/mois</span>
-      </button>
-      <button class="amount-btn" data-amount="2000" tabindex="0">
-        2 000
-        <span class="fcfa">FCFA/mois</span>
-      </button>
-      <button class="amount-btn" data-amount="3000" tabindex="0">
-        3 000
-        <span class="fcfa">FCFA/mois</span>
-      </button>
-      <button class="amount-btn" data-amount="5000" tabindex="0">
-        5 000
-        <span class="fcfa">FCFA/mois</span>
-      </button>
-      <button class="amount-btn" data-amount="10000" tabindex="0">
-        10 000
-        <span class="fcfa">FCFA/mois</span>
-      </button>
+    <div class="question-label">💵 Je cotise combien par mois ?</div>
+    <div class="amounts">
+      <button class="amount-btn" data-amount="1000">1 000<span class="fcfa">FCFA/mois</span></button>
+      <button class="amount-btn" data-amount="2000">2 000<span class="fcfa">FCFA/mois</span></button>
+      <button class="amount-btn" data-amount="3000">3 000<span class="fcfa">FCFA/mois</span></button>
+      <button class="amount-btn" data-amount="5000">5 000<span class="fcfa">FCFA/mois</span></button>
+      <button class="amount-btn" data-amount="10000">10 000<span class="fcfa">FCFA/mois</span></button>
     </div>
 
-    <!-- Option "Je ne peux pas" -->
-    <button class="cannot-btn" id="cannot-btn" tabindex="0">
-      😔 Je ne peux pas cotiser pour l'instant
-    </button>
+    <button class="cannot-btn" id="cannot-btn">😔 Je ne peux pas cotiser pour l'instant</button>
 
-    <!-- Nom optionnel -->
     <div class="name-group">
       <label>Votre prénom (optionnel)</label>
-      <input type="text" id="input-name" placeholder="Ex: Khalifa, Fatou..." tabindex="0"/>
+      <input type="text" id="input-name" placeholder="Ex: Khalifa, Fatou..."/>
     </div>
 
-    <div class="error-msg" id="error-msg">
-      Une erreur est survenue. Veuillez réessayer.
-    </div>
+    <div class="error-msg" id="error-msg"></div>
 
-    <button class="btn-submit" id="btn-submit" disabled tabindex="0">
-      Valider ma réponse →
-    </button>
+    <button class="btn-submit" id="btn-submit" disabled>Choisissez un montant →</button>
 
-    <!-- Résultats en temps réel -->
     <div class="results" id="results">
       <div class="sep"></div>
       <div class="result-title">📊 Résultats en temps réel</div>
-
       <div class="result-bar-wrap">
         <div class="result-bar-label">
           <span style="color:#22C55E">✅ Partants</span>
           <span id="pct-oui" style="color:#22C55E">0%</span>
         </div>
-        <div class="result-bar">
-          <div class="result-bar-fill fill-oui" id="bar-oui" style="width:0%"></div>
-        </div>
+        <div class="result-bar"><div class="result-bar-fill fill-oui" id="bar-oui" style="width:0%"></div></div>
       </div>
-
       <div class="result-bar-wrap">
         <div class="result-bar-label">
           <span style="color:#EF4444">❌ Pas maintenant</span>
           <span id="pct-non" style="color:#EF4444">0%</span>
         </div>
-        <div class="result-bar">
-          <div class="result-bar-fill fill-non" id="bar-non" style="width:0%"></div>
-        </div>
+        <div class="result-bar"><div class="result-bar-fill fill-non" id="bar-non" style="width:0%"></div></div>
       </div>
-
       <div class="total-box">
-        <div class="amount" id="total-amount">0 F</div>
-        <div class="label">Cagnotte mensuelle estimée</div>
+        <div class="total-num" id="total-amount">0 F</div>
+        <div class="total-label">Cagnotte mensuelle estimée</div>
       </div>
-
       <div class="result-votes" id="vote-chips"></div>
     </div>
   </div>
 
-  <!-- Merci -->
+  <!-- ÉCRAN MERCI -->
   <div class="thankyou" id="thankyou">
-    <div class="emoji" id="ty-emoji">✅</div>
-    <h2 id="ty-title">Merci !</h2>
-    <p id="ty-text">Votre réponse a été enregistrée.</p>
-
-    <div class="sep" style="margin: 1.5rem 0;"></div>
-
-    <div class="results show" id="results-final">
-      <div class="result-title">📊 Résultats de l'équipe (temps réel)</div>
-
+    <div class="ty-emoji" id="ty-emoji">🎉</div>
+    <div class="ty-title" id="ty-title">Merci !</div>
+    <p class="ty-text" id="ty-text"></p>
+    <div class="sep" style="margin:1.5rem 0"></div>
+    <div class="results show">
+      <div class="result-title">📊 Résultats de l'équipe</div>
       <div class="result-bar-wrap">
         <div class="result-bar-label">
           <span style="color:#22C55E">✅ Partants</span>
           <span id="pct-oui-f" style="color:#22C55E">0%</span>
         </div>
-        <div class="result-bar">
-          <div class="result-bar-fill fill-oui" id="bar-oui-f" style="width:0%"></div>
-        </div>
+        <div class="result-bar"><div class="result-bar-fill fill-oui" id="bar-oui-f" style="width:0%"></div></div>
       </div>
-
       <div class="result-bar-wrap">
         <div class="result-bar-label">
           <span style="color:#EF4444">❌ Pas maintenant</span>
           <span id="pct-non-f" style="color:#EF4444">0%</span>
         </div>
-        <div class="result-bar">
-          <div class="result-bar-fill fill-non" id="bar-non-f" style="width:0%"></div>
-        </div>
+        <div class="result-bar"><div class="result-bar-fill fill-non" id="bar-non-f" style="width:0%"></div></div>
       </div>
-
       <div class="total-box">
-        <div class="amount" id="total-amount-f">0 F</div>
-        <div class="label">Cagnotte mensuelle estimée</div>
+        <div class="total-num" id="total-amount-f">0 F</div>
+        <div class="total-label">Cagnotte mensuelle estimée</div>
       </div>
-
       <div class="result-votes" id="vote-chips-f"></div>
     </div>
-
-    <a class="btn-wa" id="wa-share" href="#" target="_blank" tabindex="0">
-      📲 Partager sur WhatsApp
-    </a>
+    <a class="btn-wa" id="wa-share" href="#" target="_blank">📲 Partager sur WhatsApp</a>
   </div>
-
 </div>
 
 <script>
-  // ═══════════════════════════════════════════════════════════
-  // CONFIGURATION SUPABASE
-  // Remplacez ces valeurs par celles de votre projet Supabase
-  // ═══════════════════════════════════════════════════════════
-  const SUPABASE_URL = 'https://exxcffzyawyttwxwsttb.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4eGNmZnp5YXd5dHR3eHdzdHRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NDIyMTYsImV4cCI6MjA5MzQxODIxNn0.AC7Mr1glNvSEnJL1_n0KBmSf5p_HG2bUQMv8Cfhp58Y';
-  const APP_URL = 'https://sondage-rose.vercel.app';
-  // ═══════════════════════════════════════════════════════════
+// ══════════════════════════════════════
+// CONFIG — tes clés Supabase
+// ══════════════════════════════════════
+const SUPABASE_URL      = 'https://exxcffzyawyttwxwsttb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4eGNmZnp5YXd5dHR3eHdzdHRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NDIyMTYsImV4cCI6MjA5MzQxODIxNn0.AC7Mr1glNvSEnJL1_n0KBmSf5p_HG2bUQMv8Cfhp58Y';
+const APP_URL           = 'https://sondage-rose.vercel.app';
+// ══════════════════════════════════════
 
-  // ── State ─────────────────────────────────────────────────
-  let selectedAmount = null;
-  let selectedVote = null; // 'oui' ou 'non'
-  let isCannotMode = false;
-  let supabase = null;
-  let userId = null;
-  let hasVoted = false;
+// ── Init Supabase ─────────────────────────────
+// FIX PRINCIPAL : avec jsdelivr UMD, l'objet global est window.supabase
+// et createClient est directement dessus
+const { createClient } = window.supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // ── Initialisation ──────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', async () => {
-    // Configurer les écouteurs d'événements EN PREMIER (boutons doivent toujours fonctionner)
-    setupEventListeners();
+// ── State ─────────────────────────────────────
+let selectedAmount = null;
+let selectedVote   = null;
+let hasVoted       = false;
+let allVotes       = [];
 
-    // Récupérer ou générer l'identifiant utilisateur
-    userId = localStorage.getItem('nelal_user_id');
-    if (!userId) {
-      userId = crypto.randomUUID();
-      localStorage.setItem('nelal_user_id', userId);
-    }
+// ID unique par navigateur
+let userId = localStorage.getItem('nelal_uid');
+if (!userId) {
+  userId = 'u' + Date.now() + Math.random().toString(36).slice(2, 7);
+  localStorage.setItem('nelal_uid', userId);
+}
 
-    // Initialiser Supabase
-    if (window.supabase) {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      updateConnStatus('online');
-    } else {
-      updateConnStatus('offline');
-      showError('Erreur de connexion à la base de données. Les boutons fonctionnent mais vous ne pouvez pas voter hors ligne.');
-      // NE PAS return - laisser l'UI fonctionner
-    }
+// ── Démarrage ─────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  setupListeners();
+  await init();
+});
 
-    // Vérifier si l'utilisateur a déjà voté (seulement si Supabase est connecté)
-    if (supabase) {
-      await checkExistingVote();
-    }
+async function init() {
+  await checkExistingVote();
+  await loadResults();
+  setupRealtime();
+}
 
-    // Charger les résultats initiaux (seulement si connecté)
-    if (supabase) {
-      await loadResults();
-      // Activer le temps réel
-      setupRealtime();
-    }
+// ── Listeners UI ──────────────────────────────
+function setupListeners() {
+  document.querySelectorAll('.amount-btn').forEach(btn => {
+    btn.addEventListener('click', () => selectAmount(parseInt(btn.dataset.amount)));
+  });
+  document.getElementById('cannot-btn').addEventListener('click', selectCannot);
+  document.getElementById('btn-submit').addEventListener('click', submitVote);
+  document.getElementById('input-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitVote();
+  });
+}
 
-    // Afficher le message de connexion
-    document.getElementById('info-msg').classList.add('show');
+// ── Sélection montant ─────────────────────────
+function selectAmount(amount) {
+  selectedAmount = amount;
+  selectedVote   = 'oui';
+
+  document.getElementById('cannot-btn').classList.remove('selected');
+  document.querySelectorAll('.amount-btn').forEach(b => {
+    b.disabled = false;
+    b.classList.toggle('selected', parseInt(b.dataset.amount) === amount);
   });
 
-  // ── Vérifier vote existant ────────────────────────────────
-  async function checkExistingVote() {
-    try {
-      const { data, error } = await supabase
-        .from('votes')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+  const sb = document.getElementById('btn-submit');
+  sb.disabled = false;
+  sb.textContent = 'Cotiser ' + amount.toLocaleString('fr-FR') + ' F/mois →';
+}
 
-      if (error) throw error;
+// ── Sélection "ne peut pas" ───────────────────
+function selectCannot() {
+  selectedAmount = 0;
+  selectedVote   = 'non';
 
-      if (data) {
-        hasVoted = true;
-        // Afficher le message "déjà voté"
-        document.getElementById('already-voted').classList.add('show');
-        // Masquer le formulaire, afficher les résultats
-        showThankYouScreen(data.vote, data.amount);
-      }
-    } catch (err) {
-      console.error('Erreur vérification vote:', err);
-    }
-  }
+  document.getElementById('cannot-btn').classList.add('selected');
+  document.querySelectorAll('.amount-btn').forEach(b => {
+    b.classList.remove('selected');
+    b.disabled = true;
+  });
 
-  // ── Configurer écouteurs ──────────────────────────────────
-  function setupEventListeners() {
-    // Boutons de montant
-    document.querySelectorAll('.amount-btn').forEach(btn => {
-      btn.addEventListener('click', () => selectAmount(parseInt(btn.dataset.amount)));
-      btn.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          selectAmount(parseInt(btn.dataset.amount));
-        }
-      });
-    });
+  const sb = document.getElementById('btn-submit');
+  sb.disabled = false;
+  sb.textContent = 'Envoyer mon vote →';
+}
 
-    // Bouton "Je ne peux pas"
-    const cannotBtn = document.getElementById('cannot-btn');
-    cannotBtn.addEventListener('click', selectCannot);
-    cannotBtn.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        selectCannot();
-      }
-    });
+// ── Vérifier vote existant ────────────────────
+async function checkExistingVote() {
+  try {
+    const { data, error } = await db
+      .from('votes')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    // Bouton submit
-    const submitBtn = document.getElementById('btn-submit');
-    submitBtn.addEventListener('click', submitVote);
-    submitBtn.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        submitVote();
-      }
-    });
+    if (error) { console.error(error); setConn(false); return; }
 
-    // Input nom - permettre validation avec Entrée
-    document.getElementById('input-name').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !submitBtn.disabled) {
-        submitVote();
-      }
-    });
-  }
+    setConn(true);
 
-  // ── Sélection montant ────────────────────────────────────
-  function selectAmount(amount) {
-    if (isCannotMode) {
-      // Sortir du mode "je ne peux pas"
-      isCannotMode = false;
-      selectedVote = null;
-      document.getElementById('cannot-btn').classList.remove('selected');
-      document.querySelectorAll('.amount-btn').forEach(b => b.disabled = false);
-    }
-
-    selectedAmount = amount;
-    selectedVote = 'oui';
-
-    // Mise à jour UI
-    document.querySelectorAll('.amount-btn').forEach(btn => {
-      btn.classList.toggle('selected', parseInt(btn.dataset.amount) === amount);
-    });
-
-    // Activer le bouton de validation
-    document.getElementById('btn-submit').disabled = false;
-    document.getElementById('btn-submit').textContent = 'Valider ma cotisation →';
-  }
-
-  // ── Sélection "Je ne peux pas" ─────────────────────────────
-  function selectCannot() {
-    isCannotMode = true;
-    selectedAmount = 0;
-    selectedVote = 'non';
-
-    // Mise à jour UI
-    document.getElementById('cannot-btn').classList.add('selected');
-    document.querySelectorAll('.amount-btn').forEach(btn => {
-      btn.classList.remove('selected');
-      btn.disabled = true;
-    });
-
-    // Activer le bouton de validation
-    const submitBtn = document.getElementById('btn-submit');
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Valider mon vote →';
-  }
-
-  // ── Soumettre le vote ────────────────────────────────────
-  async function submitVote() {
-    if (!selectedVote) {
-      showError('Veuillez sélectionner un montant ou indiquer que vous ne pouvez pas cotiser.');
-      return;
-    }
-
-    if (!supabase) {
-      showError('Pas de connexion à la base de données. Vérifiez votre connexion internet.');
-      return;
-    }
-
-    const submitBtn = document.getElementById('btn-submit');
-    submitBtn.classList.add('loading');
-    submitBtn.disabled = true;
-    hideError();
-
-    const name = document.getElementById('input-name').value.trim() || null;
-
-    try {
-      const { data, error } = await supabase
-        .from('votes')
-        .insert([{
-          user_id: userId,
-          vote: selectedVote,
-          amount: selectedAmount || 0,
-          name: name
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        if (error.code === '23505') {
-          showError('Tu as déjà voté ! Un seul vote par personne est autorisé.');
-          hasVoted = true;
-          await checkExistingVote();
-        } else {
-          throw error;
-        }
-        return;
-      }
-
-      // Succès
+    if (data) {
       hasVoted = true;
-      showThankYouScreen(selectedVote, selectedAmount);
-
-    } catch (err) {
-      console.error('Erreur soumission:', err);
-      showError('Erreur lors de l\'envoi. Vérifie ta connexion et réessaie.');
-      submitBtn.classList.remove('loading');
-      submitBtn.disabled = false;
+      document.getElementById('already-voted').classList.add('show');
+      showThankyou(data.vote, data.amount);
     }
+  } catch(e) {
+    console.error(e);
+    setConn(false);
   }
+}
 
-  // ── Afficher écran de remerciement ────────────────────────
-  function showThankYouScreen(vote, amount) {
-    document.getElementById('form-section').style.display = 'none';
-    document.getElementById('thankyou').classList.add('show');
+// ── Soumettre ─────────────────────────────────
+async function submitVote() {
+  if (!selectedVote) { showErr('Choisissez un montant ou "Je ne peux pas".'); return; }
+  if (hasVoted)       { showErr('Tu as déjà voté !'); return; }
 
-    const isOui = vote === 'oui';
-    document.getElementById('ty-emoji').textContent = isOui ? '🎉' : '👌';
-    document.getElementById('ty-title').textContent = isOui ? 'Merci, tu es partant(e) !' : 'Pas de problème !';
-    document.getElementById('ty-text').textContent = isOui
-      ? `Tu cotises ${(amount || 0).toLocaleString('fr-FR')} F/mois. Inshallah ça décolle ensemble ! 🚀`
-      : 'Ta réponse a été notée. Pas de pression — quand tu peux tu peux. 🙏';
+  const sb = document.getElementById('btn-submit');
+  sb.classList.add('loading');
+  sb.disabled = true;
+  hideErr();
 
-    // Mettre à jour les résultats finaux
-    loadResults();
+  const name = document.getElementById('input-name').value.trim() || null;
 
-    // Mettre à jour le lien WhatsApp
-    updateWhatsAppLink();
-  }
+  try {
+    const { error } = await db.from('votes').insert([{
+      user_id: userId,
+      vote:    selectedVote,
+      amount:  selectedAmount || 0,
+      name
+    }]);
 
-  // ── Charger les résultats ─────────────────────────────────
-  async function loadResults() {
-    try {
-      const { data: votes, error } = await supabase
-        .from('votes')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      renderResults(votes || [], 'bar-oui', 'bar-non', 'pct-oui', 'pct-non', 'total-amount', 'vote-chips');
-      renderResults(votes || [], 'bar-oui-f', 'bar-non-f', 'pct-oui-f', 'pct-non-f', 'total-amount-f', 'vote-chips-f');
-
-      // Afficher la section résultats si on est sur le formulaire
-      if (!hasVoted && votes && votes.length > 0) {
-        document.getElementById('results').classList.add('show');
+    if (error) {
+      if (error.code === '23505') {
+        hasVoted = true;
+        showErr('Tu as déjà voté depuis cet appareil.');
+        await checkExistingVote();
+      } else {
+        throw error;
       }
-    } catch (err) {
-      console.error('Erreur chargement résultats:', err);
+      sb.classList.remove('loading');
+      sb.disabled = false;
+      return;
     }
+
+    hasVoted = true;
+    await loadResults();
+    showThankyou(selectedVote, selectedAmount);
+    updateWaLink();
+
+  } catch(e) {
+    console.error(e);
+    showErr('Erreur : ' + (e.message || 'Réessaie dans un instant.'));
+    sb.classList.remove('loading');
+    sb.disabled = false;
   }
+}
 
-  // ── Rendu des résultats ───────────────────────────────────
-  function renderResults(votes, barOuiId, barNonId, pctOuiId, pctNonId, totalId, chipsId) {
-    const total = votes.length;
-    const ouiVotes = votes.filter(v => v.vote === 'oui');
-    const nonVotes = votes.filter(v => v.vote === 'non');
-    const pctO = total ? Math.round(ouiVotes.length / total * 100) : 0;
-    const pctN = total ? Math.round(nonVotes.length / total * 100) : 0;
-    const cagnotte = ouiVotes.reduce((s, v) => s + (v.amount || 0), 0);
+// ── Charger résultats ─────────────────────────
+async function loadResults() {
+  try {
+    const { data, error } = await db
+      .from('votes')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    document.getElementById(barOuiId).style.width = pctO + '%';
-    document.getElementById(barNonId).style.width = pctN + '%';
-    document.getElementById(pctOuiId).textContent = pctO + '%';
-    document.getElementById(pctNonId).textContent = pctN + '%';
-    document.getElementById(totalId).textContent = cagnotte.toLocaleString('fr-FR') + ' F';
+    if (error) throw error;
 
-    // Chips avec animation pour les nouveaux
-    const chipsEl = document.getElementById(chipsId);
-    if (chipsEl) {
-      const existingChips = new Set(Array.from(chipsEl.children).map(c => c.dataset.id));
-      const newVotes = votes.filter(v => !existingChips.has(v.id));
+    allVotes = data || [];
+    renderSection('bar-oui',   'bar-non',   'pct-oui',   'pct-non',   'total-amount',   'vote-chips');
+    renderSection('bar-oui-f', 'bar-non-f', 'pct-oui-f', 'pct-non-f', 'total-amount-f', 'vote-chips-f');
 
-      chipsEl.innerHTML = '';
-      votes.forEach(v => {
-        const chip = document.createElement('span');
-        chip.className = `vote-chip ${v.vote}`;
-        chip.dataset.id = v.id;
-        const name = v.name || 'Anonyme';
-        const txt = v.vote === 'oui'
-          ? `✅ ${name} — ${(v.amount || 0).toLocaleString('fr-FR')} F`
-          : `❌ ${name}`;
-        chip.textContent = txt;
-        if (newVotes.includes(v)) {
-          chip.classList.add('new');
-        }
-        chipsEl.appendChild(chip);
-      });
+    if (allVotes.length > 0 && !hasVoted) {
+      document.getElementById('results').classList.add('show');
     }
+  } catch(e) {
+    console.error(e);
   }
+}
 
-  // ── Temps réel avec Supabase ──────────────────────────────
-  function setupRealtime() {
-    supabase
-      .channel('votes-channel')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'votes' },
-        (payload) => {
-          console.log('Changement temps réel:', payload);
-          loadResults();
-          updateWhatsAppLink();
-        }
-      )
-      .subscribe((status) => {
-        console.log('Statut Realtime:', status);
-        if (status === 'SUBSCRIBED') {
-          updateConnStatus('online');
-        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          updateConnStatus('offline');
-        }
-      });
+// ── Rendu section ─────────────────────────────
+function renderSection(bOui, bNon, pOui, pNon, totId, chipId) {
+  const total   = allVotes.length;
+  const ouiList = allVotes.filter(v => v.vote === 'oui');
+  const nonList = allVotes.filter(v => v.vote === 'non');
+  const pO      = total ? Math.round(ouiList.length / total * 100) : 0;
+  const pN      = total ? Math.round(nonList.length / total * 100) : 0;
+  const cagnot  = ouiList.reduce((s, v) => s + (v.amount || 0), 0);
+
+  const get = id => document.getElementById(id);
+  if (!get(bOui)) return;
+
+  get(bOui).style.width   = pO + '%';
+  get(bNon).style.width   = pN + '%';
+  get(pOui).textContent   = pO + '%';
+  get(pNon).textContent   = pN + '%';
+  get(totId).textContent  = cagnot.toLocaleString('fr-FR') + ' F';
+
+  const chipsEl = get(chipId);
+  if (chipsEl) {
+    chipsEl.innerHTML = '';
+    allVotes.forEach(v => {
+      const c = document.createElement('span');
+      c.className = 'vote-chip ' + v.vote;
+      const nm = v.name || 'Anonyme';
+      c.textContent = v.vote === 'oui'
+        ? '✅ ' + nm + ' — ' + (v.amount || 0).toLocaleString('fr-FR') + ' F'
+        : '❌ ' + nm;
+      chipsEl.appendChild(c);
+    });
   }
+}
 
-  // ── Mettre à jour lien WhatsApp ──────────────────────────
-  async function updateWhatsAppLink() {
-    try {
-      const { data: votes, error } = await supabase
-        .from('votes')
-        .select('vote');
+// ── Realtime ──────────────────────────────────
+function setupRealtime() {
+  db.channel('votes-rt')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, async () => {
+      await loadResults();
+      updateWaLink();
+    })
+    .subscribe(status => setConn(status === 'SUBSCRIBED'));
+}
 
-      if (error) throw error;
+// ── Écran merci ───────────────────────────────
+function showThankyou(vote, amount) {
+  document.getElementById('form-section').style.display = 'none';
+  document.getElementById('thankyou').classList.add('show');
 
-      const total = votes.length;
-      const ouiCount = votes.filter(v => v.vote === 'oui').length;
+  const isOui = vote === 'oui';
+  document.getElementById('ty-emoji').textContent = isOui ? '🎉' : '👌';
+  document.getElementById('ty-title').textContent = isOui ? 'Merci, tu es partant(e) !' : 'Pas de problème !';
+  document.getElementById('ty-text').textContent  = isOui
+    ? 'Tu cotises ' + (amount || 0).toLocaleString('fr-FR') + ' F/mois. Inshallah ça décolle ensemble ! 🚀'
+    : 'Ta réponse a été notée. Pas de pression — quand tu peux tu peux. 🙏';
 
-      const { data: ouiVotes, error: ouiError } = await supabase
-        .from('votes')
-        .select('amount')
-        .eq('vote', 'oui');
+  renderSection('bar-oui-f', 'bar-non-f', 'pct-oui-f', 'pct-non-f', 'total-amount-f', 'vote-chips-f');
+  updateWaLink();
+}
 
-      const cagnotte = ouiError ? 0 : ouiVotes.reduce((s, v) => s + (v.amount || 0), 0);
+// ── Lien WhatsApp ─────────────────────────────
+function updateWaLink() {
+  const ouiList = allVotes.filter(v => v.vote === 'oui');
+  const cagnot  = ouiList.reduce((s, v) => s + (v.amount || 0), 0);
+  const msg = '🗳️ *Sondage Cotisation — Nelal Express*\n\n'
+    + ouiList.length + ' sur ' + allVotes.length + ' personnes sont partantes !\n'
+    + 'Cagnotte estimée : *' + cagnot.toLocaleString('fr-FR') + ' F/mois* 💰\n\n'
+    + 'Tu n\'as pas encore voté ? 👇\n' + APP_URL;
+  document.getElementById('wa-share').href = 'https://wa.me/?text=' + encodeURIComponent(msg);
+}
 
-      const waMsg = `🗳️ *Sondage Cotisation — Nelal Express*\n\n${ouiCount} sur ${total} personnes sont partantes !\nCagnotte estimée : *${cagnotte.toLocaleString('fr-FR')} F/mois*\n\nTu n'as pas encore voté ? Clique ici 👇\n${APP_URL}`;
-
-      document.getElementById('wa-share').href = `https://wa.me/?text=${encodeURIComponent(waMsg)}`;
-    } catch (err) {
-      console.error('Erreur mise à jour WhatsApp:', err);
-    }
-  }
-
-  // ── Utilitaires ───────────────────────────────────────────
-  function showError(msg) {
-    const el = document.getElementById('error-msg');
-    el.textContent = msg;
-    el.classList.add('show');
-  }
-
-  function hideError() {
-    document.getElementById('error-msg').classList.remove('show');
-  }
-
-  function updateConnStatus(status) {
-    const el = document.getElementById('conn-status');
-    el.className = 'conn-status ' + status;
-    if (status === 'online') el.textContent = 'En direct';
-    else if (status === 'offline') el.textContent = 'Hors ligne';
-    else el.textContent = 'Connexion...';
-  }
+// ── Utilitaires ───────────────────────────────
+function showErr(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function hideErr() { document.getElementById('error-msg').classList.remove('show'); }
+function setConn(ok) {
+  document.getElementById('conn-dot').style.background = ok ? '#22C55E' : '#EF4444';
+  document.getElementById('conn-dot').style.animation  = ok ? 'blink 2s infinite' : 'none';
+  document.getElementById('conn-txt').textContent = ok ? 'En direct ✓' : 'Hors ligne';
+}
 </script>
 </body>
 </html>
