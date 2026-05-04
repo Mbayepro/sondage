@@ -618,6 +618,9 @@
 
   // ── Initialisation ──────────────────────────────────────
   document.addEventListener('DOMContentLoaded', async () => {
+    // Configurer les écouteurs d'événements EN PREMIER (boutons doivent toujours fonctionner)
+    setupEventListeners();
+
     // Récupérer ou générer l'identifiant utilisateur
     userId = localStorage.getItem('nelal_user_id');
     if (!userId) {
@@ -631,21 +634,21 @@
       updateConnStatus('online');
     } else {
       updateConnStatus('offline');
-      showError('Erreur de connexion à la base de données');
-      return;
+      showError('Erreur de connexion à la base de données. Les boutons fonctionnent mais vous ne pouvez pas voter hors ligne.');
+      // NE PAS return - laisser l'UI fonctionner
     }
 
-    // Vérifier si l'utilisateur a déjà voté
-    await checkExistingVote();
+    // Vérifier si l'utilisateur a déjà voté (seulement si Supabase est connecté)
+    if (supabase) {
+      await checkExistingVote();
+    }
 
-    // Configurer les écouteurs d'événements
-    setupEventListeners();
-
-    // Charger les résultats initiaux
-    await loadResults();
-
-    // Activer le temps réel
-    setupRealtime();
+    // Charger les résultats initiaux (seulement si connecté)
+    if (supabase) {
+      await loadResults();
+      // Activer le temps réel
+      setupRealtime();
+    }
 
     // Afficher le message de connexion
     document.getElementById('info-msg').classList.add('show');
@@ -761,6 +764,11 @@
   async function submitVote() {
     if (!selectedVote) {
       showError('Veuillez sélectionner un montant ou indiquer que vous ne pouvez pas cotiser.');
+      return;
+    }
+
+    if (!supabase) {
+      showError('Pas de connexion à la base de données. Vérifiez votre connexion internet.');
       return;
     }
 
