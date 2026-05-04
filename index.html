@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sondage Cotisation — Nelal Express</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #0F172A;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .card {
+    background: #1E293B;
+    border: 1px solid rgba(249,115,22,0.2);
+    border-radius: 24px;
+    padding: 2.5rem 2rem;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  }
+
+  /* Header */
+  .logo {
+    display: flex; align-items: center; gap: .6rem;
+    margin-bottom: 1.8rem;
+  }
+  .logo-icon {
+    width: 38px; height: 38px;
+    background: #F97316;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 1.1rem;
+  }
+  .logo-text { font-size: 1.1rem; font-weight: 800; letter-spacing: 1px; }
+  .logo-text span { color: #F97316; }
+
+  .tag {
+    display: inline-block;
+    background: rgba(249,115,22,0.1);
+    border: 1px solid rgba(249,115,22,0.3);
+    color: #F97316;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: .3rem .8rem;
+    border-radius: 100px;
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 900;
+    margin-bottom: .6rem;
+    line-height: 1.2;
+  }
+
+  .subtitle {
+    font-size: .9rem;
+    color: #94A3B8;
+    line-height: 1.7;
+    margin-bottom: 2rem;
+  }
+  .subtitle strong { color: #fff; }
+
+  /* Message info */
+  .info-msg {
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.2);
+    color: #86EFAC;
+    padding: .7rem 1rem;
+    border-radius: 10px;
+    font-size: .82rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .info-msg.show { display: block; }
+
+  /* Séparateur */
+  .sep {
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+    margin: 1.5rem 0;
+  }
+
+  /* Question montant */
+  .question-label {
+    font-size: .75rem;
+    font-weight: 700;
+    color: #64748B;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .amounts {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: .7rem;
+    margin-bottom: 1rem;
+  }
+
+  .amount-btn {
+    background: #0F172A;
+    border: 2px solid rgba(255,255,255,0.08);
+    color: #94A3B8;
+    padding: .9rem .5rem;
+    border-radius: 14px;
+    font-size: .95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    text-align: center;
+    outline: none;
+  }
+  .amount-btn:hover {
+    border-color: #F97316;
+    color: #F97316;
+    background: rgba(249,115,22,0.06);
+  }
+  .amount-btn:focus-visible {
+    outline: 2px solid #F97316;
+    outline-offset: 2px;
+  }
+  .amount-btn.selected {
+    border-color: #F97316;
+    background: rgba(249,115,22,0.12);
+    color: #F97316;
+    box-shadow: 0 0 16px rgba(249,115,22,0.15);
+  }
+  .amount-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-color: rgba(255,255,255,0.08);
+    color: #64748B;
+  }
+  .amount-btn:disabled:hover {
+    background: #0F172A;
+    border-color: rgba(255,255,255,0.08);
+    color: #64748B;
+  }
+  .amount-btn .fcfa {
+    display: block;
+    font-size: .6rem;
+    font-weight: 400;
+    color: #475569;
+    margin-top: .2rem;
+  }
+  .amount-btn.selected .fcfa { color: #F97316; opacity: .7; }
+
+  /* Bouton "Je ne peux pas" */
+  .cannot-btn {
+    width: 100%;
+    background: #0F172A;
+    border: 2px dashed rgba(239,68,68,0.3);
+    color: #EF4444;
+    padding: 1rem;
+    border-radius: 14px;
+    font-size: .95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    outline: none;
+  }
+  .cannot-btn:hover {
+    border-color: #EF4444;
+    background: rgba(239,68,68,0.08);
+  }
+  .cannot-btn:focus-visible {
+    outline: 2px solid #EF4444;
+    outline-offset: 2px;
+  }
+  .cannot-btn.selected {
+    border-style: solid;
+    border-color: #EF4444;
+    background: rgba(239,68,68,0.12);
+    box-shadow: 0 0 16px rgba(239,68,68,0.15);
+  }
+
+  /* Nom optionnel */
+  .name-group {
+    margin-bottom: 1.5rem;
+  }
+  .name-group label {
+    display: block;
+    font-size: .72rem;
+    color: #64748B;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: .6rem;
+  }
+  .name-group input {
+    width: 100%;
+    background: #0F172A;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #fff;
+    padding: .7rem 1rem;
+    border-radius: 12px;
+    font-size: .9rem;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .name-group input:focus {
+    border-color: #F97316;
+    outline: none;
+  }
+  .name-group input::placeholder { color: #3A4060; }
+
+  /* Submit */
+  .btn-submit {
+    width: 100%;
+    background: #F97316;
+    color: #fff;
+    border: none;
+    padding: 1rem;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all .2s;
+    margin-bottom: .8rem;
+    outline: none;
+  }
+  .btn-submit:hover:not(:disabled) {
+    background: #EA580C;
+    box-shadow: 0 0 24px rgba(249,115,22,0.3);
+    transform: translateY(-1px);
+  }
+  .btn-submit:focus-visible {
+    outline: 2px solid #F97316;
+    outline-offset: 2px;
+  }
+  .btn-submit:disabled {
+    opacity: .4; cursor: not-allowed; transform: none;
+  }
+
+  /* Loading state */
+  .btn-submit.loading {
+    position: relative;
+    color: transparent;
+  }
+  .btn-submit.loading::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    margin-left: -10px;
+    margin-top: -10px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Résultats */
+  .results {
+    display: none;
+    margin-top: 1.5rem;
+  }
+  .results.show { display: block; }
+
+  .result-title {
+    font-size: .72rem;
+    color: #64748B;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .result-bar-wrap {
+    margin-bottom: 1rem;
+  }
+  .result-bar-label {
+    display: flex; justify-content: space-between;
+    font-size: .82rem; font-weight: 600;
+    margin-bottom: .4rem;
+  }
+  .result-bar {
+    height: 8px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .result-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width .6s ease;
+  }
+  .fill-oui { background: #22C55E; }
+  .fill-non { background: #EF4444; }
+
+  .result-votes {
+    display: flex; flex-wrap: wrap; gap: .5rem;
+    margin-top: 1rem;
+  }
+  .vote-chip {
+    font-size: .72rem;
+    padding: .25rem .7rem;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.06);
+    color: #94A3B8;
+    transition: all .3s ease;
+  }
+  .vote-chip.oui { background: rgba(34,197,94,0.1); color: #22C55E; }
+  .vote-chip.non { background: rgba(239,68,68,0.1); color: #EF4444; }
+  .vote-chip.new {
+    animation: chipPulse 0.6s ease;
+  }
+  @keyframes chipPulse {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .total-box {
+    background: rgba(249,115,22,0.08);
+    border: 1px solid rgba(249,115,22,0.2);
+    border-radius: 14px;
+    padding: 1rem;
+    text-align: center;
+    margin-top: 1.2rem;
+  }
+  .total-box .amount {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #F97316;
+    transition: all .3s ease;
+  }
+  .total-box .label {
+    font-size: .75rem;
+    color: #64748B;
+    margin-top: .2rem;
+  }
+
+  /* Partage WhatsApp */
+  .btn-wa {
+    display: flex; align-items: center; justify-content: center; gap: .5rem;
+    width: 100%;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.25);
+    color: #22C55E;
+    padding: .8rem;
+    border-radius: 14px;
+    font-size: .9rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    margin-top: 1rem;
+    transition: background .2s;
+    outline: none;
+  }
+  .btn-wa:hover { background: rgba(34,197,94,0.18); }
+  .btn-wa:focus-visible {
+    outline: 2px solid #22C55E;
+    outline-offset: 2px;
+  }
+
+  /* Thank you */
+  .thankyou {
+    display: none;
+    text-align: center;
+    padding: 1.5rem 0;
+  }
+  .thankyou.show { display: block; }
+  .thankyou .emoji { font-size: 3rem; margin-bottom: 1rem; }
+  .thankyou h2 { font-size: 1.3rem; margin-bottom: .5rem; }
+  .thankyou p { color: #94A3B8; font-size: .9rem; line-height: 1.6; }
+
+  /* Already voted message */
+  .already-voted {
+    display: none;
+    background: rgba(249,115,22,0.1);
+    border: 1px solid rgba(249,115,22,0.2);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  .already-voted.show { display: block; }
+  .already-voted .icon { font-size: 1.5rem; margin-bottom: .5rem; }
+  .already-voted p { font-size: .85rem; color: #94A3B8; }
+  .already-voted strong { color: #F97316; }
+
+  .error-msg {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.2);
+    color: #FCA5A5;
+    padding: .7rem 1rem;
+    border-radius: 10px;
+    font-size: .82rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+
+  /* Connection status */
+  .conn-status {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    padding: .4rem .8rem;
+    border-radius: 100px;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    transition: all .3s;
+    z-index: 100;
+  }
+  .conn-status.online {
+    background: rgba(34,197,94,0.15);
+    color: #22C55E;
+    border: 1px solid rgba(34,197,94,0.3);
+  }
+  .conn-status.offline {
+    background: rgba(239,68,68,0.15);
+    color: #EF4444;
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+  .conn-status.connecting {
+    background: rgba(249,115,22,0.15);
+    color: #F97316;
+    border: 1px solid rgba(249,115,22,0.3);
+  }
+</style>
+</head>
+<body>
+
+<div class="conn-status connecting" id="conn-status">Connexion...</div>
+
+<div class="card">
+
+  <!-- Logo -->
+  <div class="logo">
+    <div class="logo-icon">N</div>
+    <div class="logo-text">NELAL <span>EXPRESS</span></div>
+  </div>
+
+  <!-- Déjà voté -->
+  <div class="already-voted" id="already-voted">
+    <div class="icon">🗳️</div>
+    <p><strong>Tu as déjà voté !</strong><br>Tu peux suivre les résultats en temps réel ci-dessous.</p>
+  </div>
+
+  <!-- Formulaire -->
+  <div id="form-section">
+    <div class="tag">SONDAGE INTERNE · ÉQUIPE</div>
+    <h1>On cotise ensemble ? 💰</h1>
+    <p class="subtitle">
+      Pour que <strong>Nelal Express</strong> décolle, on a besoin d'un petit budget commun —
+      marketing, impression, frais de lancement. Chacun contribue selon ses moyens.
+      <br/><br/>
+      Votre réponse est <strong>100% anonyme</strong> si vous le souhaitez.
+    </p>
+
+    <div class="info-msg" id="info-msg">
+      ✓ Connecté en temps réel — les résultats s'actualisent automatiquement
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- Montant -->
+    <div class="question-label" id="amount-label">💵 Je cotise combien par mois ?</div>
+    <div class="amounts" id="amounts-grid">
+      <button class="amount-btn" data-amount="1000" tabindex="0">
+        1 000
+        <span class="fcfa">FCFA/mois</span>
+      </button>
+      <button class="amount-btn" data-amount="2000" tabindex="0">
+        2 000
+        <span class="fcfa">FCFA/mois</span>
+      </button>
+      <button class="amount-btn" data-amount="3000" tabindex="0">
+        3 000
+        <span class="fcfa">FCFA/mois</span>
+      </button>
+      <button class="amount-btn" data-amount="5000" tabindex="0">
+        5 000
+        <span class="fcfa">FCFA/mois</span>
+      </button>
+      <button class="amount-btn" data-amount="10000" tabindex="0">
+        10 000
+        <span class="fcfa">FCFA/mois</span>
+      </button>
+    </div>
+
+    <!-- Option "Je ne peux pas" -->
+    <button class="cannot-btn" id="cannot-btn" tabindex="0">
+      😔 Je ne peux pas cotiser pour l'instant
+    </button>
+
+    <!-- Nom optionnel -->
+    <div class="name-group">
+      <label>Votre prénom (optionnel)</label>
+      <input type="text" id="input-name" placeholder="Ex: Khalifa, Fatou..." tabindex="0"/>
+    </div>
+
+    <div class="error-msg" id="error-msg">
+      Une erreur est survenue. Veuillez réessayer.
+    </div>
+
+    <button class="btn-submit" id="btn-submit" disabled tabindex="0">
+      Valider ma réponse →
+    </button>
+
+    <!-- Résultats en temps réel -->
+    <div class="results" id="results">
+      <div class="sep"></div>
+      <div class="result-title">📊 Résultats en temps réel</div>
+
+      <div class="result-bar-wrap">
+        <div class="result-bar-label">
+          <span style="color:#22C55E">✅ Partants</span>
+          <span id="pct-oui" style="color:#22C55E">0%</span>
+        </div>
+        <div class="result-bar">
+          <div class="result-bar-fill fill-oui" id="bar-oui" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="result-bar-wrap">
+        <div class="result-bar-label">
+          <span style="color:#EF4444">❌ Pas maintenant</span>
+          <span id="pct-non" style="color:#EF4444">0%</span>
+        </div>
+        <div class="result-bar">
+          <div class="result-bar-fill fill-non" id="bar-non" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="total-box">
+        <div class="amount" id="total-amount">0 F</div>
+        <div class="label">Cagnotte mensuelle estimée</div>
+      </div>
+
+      <div class="result-votes" id="vote-chips"></div>
+    </div>
+  </div>
+
+  <!-- Merci -->
+  <div class="thankyou" id="thankyou">
+    <div class="emoji" id="ty-emoji">✅</div>
+    <h2 id="ty-title">Merci !</h2>
+    <p id="ty-text">Votre réponse a été enregistrée.</p>
+
+    <div class="sep" style="margin: 1.5rem 0;"></div>
+
+    <div class="results show" id="results-final">
+      <div class="result-title">📊 Résultats de l'équipe (temps réel)</div>
+
+      <div class="result-bar-wrap">
+        <div class="result-bar-label">
+          <span style="color:#22C55E">✅ Partants</span>
+          <span id="pct-oui-f" style="color:#22C55E">0%</span>
+        </div>
+        <div class="result-bar">
+          <div class="result-bar-fill fill-oui" id="bar-oui-f" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="result-bar-wrap">
+        <div class="result-bar-label">
+          <span style="color:#EF4444">❌ Pas maintenant</span>
+          <span id="pct-non-f" style="color:#EF4444">0%</span>
+        </div>
+        <div class="result-bar">
+          <div class="result-bar-fill fill-non" id="bar-non-f" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="total-box">
+        <div class="amount" id="total-amount-f">0 F</div>
+        <div class="label">Cagnotte mensuelle estimée</div>
+      </div>
+
+      <div class="result-votes" id="vote-chips-f"></div>
+    </div>
+
+    <a class="btn-wa" id="wa-share" href="#" target="_blank" tabindex="0">
+      📲 Partager sur WhatsApp
+    </a>
+  </div>
+
+</div>
+
+<script>
+  // ═══════════════════════════════════════════════════════════
+  // CONFIGURATION SUPABASE
+  // Remplacez ces valeurs par celles de votre projet Supabase
+  // ═══════════════════════════════════════════════════════════
+  const SUPABASE_URL = 'https://exxcffzyawyttwxwsttb.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4eGNmZnp5YXd5dHR3eHdzdHRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NDIyMTYsImV4cCI6MjA5MzQxODIxNn0.AC7Mr1glNvSEnJL1_n0KBmSf5p_HG2bUQMv8Cfhp58Y';
+  const APP_URL = 'https://nelal-sondage.netlify.app';
+  // ═══════════════════════════════════════════════════════════
+
+  // ── State ─────────────────────────────────────────────────
+  let selectedAmount = null;
+  let selectedVote = null; // 'oui' ou 'non'
+  let isCannotMode = false;
+  let supabase = null;
+  let userId = null;
+  let hasVoted = false;
+
+  // ── Initialisation ──────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Récupérer ou générer l'identifiant utilisateur
+    userId = localStorage.getItem('nelal_user_id');
+    if (!userId) {
+      userId = crypto.randomUUID();
+      localStorage.setItem('nelal_user_id', userId);
+    }
+
+    // Initialiser Supabase
+    if (window.supabase) {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      updateConnStatus('online');
+    } else {
+      updateConnStatus('offline');
+      showError('Erreur de connexion à la base de données');
+      return;
+    }
+
+    // Vérifier si l'utilisateur a déjà voté
+    await checkExistingVote();
+
+    // Configurer les écouteurs d'événements
+    setupEventListeners();
+
+    // Charger les résultats initiaux
+    await loadResults();
+
+    // Activer le temps réel
+    setupRealtime();
+
+    // Afficher le message de connexion
+    document.getElementById('info-msg').classList.add('show');
+  });
+
+  // ── Vérifier vote existant ────────────────────────────────
+  async function checkExistingVote() {
+    try {
+      const { data, error } = await supabase
+        .from('votes')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        hasVoted = true;
+        // Afficher le message "déjà voté"
+        document.getElementById('already-voted').classList.add('show');
+        // Masquer le formulaire, afficher les résultats
+        showThankYouScreen(data.vote, data.amount);
+      }
+    } catch (err) {
+      console.error('Erreur vérification vote:', err);
+    }
+  }
+
+  // ── Configurer écouteurs ──────────────────────────────────
+  function setupEventListeners() {
+    // Boutons de montant
+    document.querySelectorAll('.amount-btn').forEach(btn => {
+      btn.addEventListener('click', () => selectAmount(parseInt(btn.dataset.amount)));
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectAmount(parseInt(btn.dataset.amount));
+        }
+      });
+    });
+
+    // Bouton "Je ne peux pas"
+    const cannotBtn = document.getElementById('cannot-btn');
+    cannotBtn.addEventListener('click', selectCannot);
+    cannotBtn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectCannot();
+      }
+    });
+
+    // Bouton submit
+    const submitBtn = document.getElementById('btn-submit');
+    submitBtn.addEventListener('click', submitVote);
+    submitBtn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        submitVote();
+      }
+    });
+
+    // Input nom - permettre validation avec Entrée
+    document.getElementById('input-name').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !submitBtn.disabled) {
+        submitVote();
+      }
+    });
+  }
+
+  // ── Sélection montant ────────────────────────────────────
+  function selectAmount(amount) {
+    if (isCannotMode) {
+      // Sortir du mode "je ne peux pas"
+      isCannotMode = false;
+      selectedVote = null;
+      document.getElementById('cannot-btn').classList.remove('selected');
+      document.querySelectorAll('.amount-btn').forEach(b => b.disabled = false);
+    }
+
+    selectedAmount = amount;
+    selectedVote = 'oui';
+
+    // Mise à jour UI
+    document.querySelectorAll('.amount-btn').forEach(btn => {
+      btn.classList.toggle('selected', parseInt(btn.dataset.amount) === amount);
+    });
+
+    // Activer le bouton de validation
+    document.getElementById('btn-submit').disabled = false;
+    document.getElementById('btn-submit').textContent = 'Valider ma cotisation →';
+  }
+
+  // ── Sélection "Je ne peux pas" ─────────────────────────────
+  function selectCannot() {
+    isCannotMode = true;
+    selectedAmount = 0;
+    selectedVote = 'non';
+
+    // Mise à jour UI
+    document.getElementById('cannot-btn').classList.add('selected');
+    document.querySelectorAll('.amount-btn').forEach(btn => {
+      btn.classList.remove('selected');
+      btn.disabled = true;
+    });
+
+    // Activer le bouton de validation
+    const submitBtn = document.getElementById('btn-submit');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Valider mon vote →';
+  }
+
+  // ── Soumettre le vote ────────────────────────────────────
+  async function submitVote() {
+    if (!selectedVote) {
+      showError('Veuillez sélectionner un montant ou indiquer que vous ne pouvez pas cotiser.');
+      return;
+    }
+
+    const submitBtn = document.getElementById('btn-submit');
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+    hideError();
+
+    const name = document.getElementById('input-name').value.trim() || null;
+
+    try {
+      const { data, error } = await supabase
+        .from('votes')
+        .insert([{
+          user_id: userId,
+          vote: selectedVote,
+          amount: selectedAmount || 0,
+          name: name
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') {
+          showError('Tu as déjà voté ! Un seul vote par personne est autorisé.');
+          hasVoted = true;
+          await checkExistingVote();
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      // Succès
+      hasVoted = true;
+      showThankYouScreen(selectedVote, selectedAmount);
+
+    } catch (err) {
+      console.error('Erreur soumission:', err);
+      showError('Erreur lors de l\'envoi. Vérifie ta connexion et réessaie.');
+      submitBtn.classList.remove('loading');
+      submitBtn.disabled = false;
+    }
+  }
+
+  // ── Afficher écran de remerciement ────────────────────────
+  function showThankYouScreen(vote, amount) {
+    document.getElementById('form-section').style.display = 'none';
+    document.getElementById('thankyou').classList.add('show');
+
+    const isOui = vote === 'oui';
+    document.getElementById('ty-emoji').textContent = isOui ? '🎉' : '👌';
+    document.getElementById('ty-title').textContent = isOui ? 'Merci, tu es partant(e) !' : 'Pas de problème !';
+    document.getElementById('ty-text').textContent = isOui
+      ? `Tu cotises ${(amount || 0).toLocaleString('fr-FR')} F/mois. Inshallah ça décolle ensemble ! 🚀`
+      : 'Ta réponse a été notée. Pas de pression — quand tu peux tu peux. 🙏';
+
+    // Mettre à jour les résultats finaux
+    loadResults();
+
+    // Mettre à jour le lien WhatsApp
+    updateWhatsAppLink();
+  }
+
+  // ── Charger les résultats ─────────────────────────────────
+  async function loadResults() {
+    try {
+      const { data: votes, error } = await supabase
+        .from('votes')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      renderResults(votes || [], 'bar-oui', 'bar-non', 'pct-oui', 'pct-non', 'total-amount', 'vote-chips');
+      renderResults(votes || [], 'bar-oui-f', 'bar-non-f', 'pct-oui-f', 'pct-non-f', 'total-amount-f', 'vote-chips-f');
+
+      // Afficher la section résultats si on est sur le formulaire
+      if (!hasVoted && votes && votes.length > 0) {
+        document.getElementById('results').classList.add('show');
+      }
+    } catch (err) {
+      console.error('Erreur chargement résultats:', err);
+    }
+  }
+
+  // ── Rendu des résultats ───────────────────────────────────
+  function renderResults(votes, barOuiId, barNonId, pctOuiId, pctNonId, totalId, chipsId) {
+    const total = votes.length;
+    const ouiVotes = votes.filter(v => v.vote === 'oui');
+    const nonVotes = votes.filter(v => v.vote === 'non');
+    const pctO = total ? Math.round(ouiVotes.length / total * 100) : 0;
+    const pctN = total ? Math.round(nonVotes.length / total * 100) : 0;
+    const cagnotte = ouiVotes.reduce((s, v) => s + (v.amount || 0), 0);
+
+    document.getElementById(barOuiId).style.width = pctO + '%';
+    document.getElementById(barNonId).style.width = pctN + '%';
+    document.getElementById(pctOuiId).textContent = pctO + '%';
+    document.getElementById(pctNonId).textContent = pctN + '%';
+    document.getElementById(totalId).textContent = cagnotte.toLocaleString('fr-FR') + ' F';
+
+    // Chips avec animation pour les nouveaux
+    const chipsEl = document.getElementById(chipsId);
+    if (chipsEl) {
+      const existingChips = new Set(Array.from(chipsEl.children).map(c => c.dataset.id));
+      const newVotes = votes.filter(v => !existingChips.has(v.id));
+
+      chipsEl.innerHTML = '';
+      votes.forEach(v => {
+        const chip = document.createElement('span');
+        chip.className = `vote-chip ${v.vote}`;
+        chip.dataset.id = v.id;
+        const name = v.name || 'Anonyme';
+        const txt = v.vote === 'oui'
+          ? `✅ ${name} — ${(v.amount || 0).toLocaleString('fr-FR')} F`
+          : `❌ ${name}`;
+        chip.textContent = txt;
+        if (newVotes.includes(v)) {
+          chip.classList.add('new');
+        }
+        chipsEl.appendChild(chip);
+      });
+    }
+  }
+
+  // ── Temps réel avec Supabase ──────────────────────────────
+  function setupRealtime() {
+    supabase
+      .channel('votes-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'votes' },
+        (payload) => {
+          console.log('Changement temps réel:', payload);
+          loadResults();
+          updateWhatsAppLink();
+        }
+      )
+      .subscribe((status) => {
+        console.log('Statut Realtime:', status);
+        if (status === 'SUBSCRIBED') {
+          updateConnStatus('online');
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          updateConnStatus('offline');
+        }
+      });
+  }
+
+  // ── Mettre à jour lien WhatsApp ──────────────────────────
+  async function updateWhatsAppLink() {
+    try {
+      const { data: votes, error } = await supabase
+        .from('votes')
+        .select('vote');
+
+      if (error) throw error;
+
+      const total = votes.length;
+      const ouiCount = votes.filter(v => v.vote === 'oui').length;
+
+      const { data: ouiVotes, error: ouiError } = await supabase
+        .from('votes')
+        .select('amount')
+        .eq('vote', 'oui');
+
+      const cagnotte = ouiError ? 0 : ouiVotes.reduce((s, v) => s + (v.amount || 0), 0);
+
+      const waMsg = `🗳️ *Sondage Cotisation — Nelal Express*\n\n${ouiCount} sur ${total} personnes sont partantes !\nCagnotte estimée : *${cagnotte.toLocaleString('fr-FR')} F/mois*\n\nTu n'as pas encore voté ? Clique ici 👇\n${APP_URL}`;
+
+      document.getElementById('wa-share').href = `https://wa.me/?text=${encodeURIComponent(waMsg)}`;
+    } catch (err) {
+      console.error('Erreur mise à jour WhatsApp:', err);
+    }
+  }
+
+  // ── Utilitaires ───────────────────────────────────────────
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  function hideError() {
+    document.getElementById('error-msg').classList.remove('show');
+  }
+
+  function updateConnStatus(status) {
+    const el = document.getElementById('conn-status');
+    el.className = 'conn-status ' + status;
+    if (status === 'online') el.textContent = 'En direct';
+    else if (status === 'offline') el.textContent = 'Hors ligne';
+    else el.textContent = 'Connexion...';
+  }
+</script>
+</body>
+</html>
