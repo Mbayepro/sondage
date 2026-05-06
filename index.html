@@ -451,7 +451,6 @@ function selectCannot() {
   document.getElementById('cannot-btn').classList.add('selected');
   document.querySelectorAll('.amount-btn').forEach(b => {
     b.classList.remove('selected');
-    b.disabled = true;
   });
 
   const sb = document.getElementById('btn-submit');
