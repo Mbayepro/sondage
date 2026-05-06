@@ -410,8 +410,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function init() {
-  await checkExistingVote();
   await loadResults();
+  await checkExistingVote();
   setupRealtime();
 }
 
@@ -556,6 +556,7 @@ async function loadResults() {
     if (allVotes.length > 0 && !hasVoted) {
       document.getElementById('results').classList.add('show');
     }
+    updateWaLink();
   } catch(e) {
     console.error(e);
   }
